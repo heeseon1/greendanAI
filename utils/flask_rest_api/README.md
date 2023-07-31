@@ -17,7 +17,7 @@ $ pip install Flask
 After Flask installation run:
 
 ```shell
-$ python3 restapi.py --port 5000
+$ python3 rest.py --port 5000
 ```
 
 Then use [curl](https://curl.se/) to perform a request:
