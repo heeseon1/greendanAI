@@ -1,5 +1,3 @@
-import io
-import requests
 from PIL import Image
 from flask import Flask, request, jsonify, send_file
 import torch
@@ -32,22 +30,12 @@ def detect():
             img_resize = image.resize((600,600))
             image_result, detections = detect_image(img_resize)
 
-            temp_img = io.BytesIO()
-            image_result.save(temp_img)
+            temp_img_path = 'temp_image.jpg'
+            image_result.save(temp_img_path)
 
-            temp_img.seek(0)
-
-            django_url = 'http://127.0.0.1:8000/photo/send_photo_to_AI'
-            files = {'file': ('temp_image.jpg', temp_img, 'image/jpeg')}
-            response = requests.post(django_url, files=files)
-
-            if response.status_code == 200:
-                return send_file(io.BytesIO(response.content), mimetype='image/jpeg')
-            else:
-                return jsonify({"error": "개체 검출된 이미지를 장고 서버로 전송하는데 실패했습니다."}), 500
-
+            return send_file(temp_img_path, mimetype='image/jpeg')
         else:
-            return jsonify({"error": "잘못된 요청입니다."}), 500
+            return jsonify({"error": "Invalid request"}), 500
 
 
 if __name__ == '__main__':
