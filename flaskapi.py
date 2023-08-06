@@ -1,6 +1,5 @@
-import io
 from PIL import Image
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import torch
 
 app = Flask(__name__)
@@ -12,10 +11,11 @@ model = torch.hub.load('ultralytics/yolov5', 'custom', path='halibut/jobs6/weigh
 def home():
     return 'Hello, World!'
 
-def detect_image(image):
-    results = model(image) #학습모델로 이미지 처리
+def detect_image(image_resize):
+    results = model(image_resize) #학습모델로 이미지 처리
+    results.render()
     detections = results.pandas().xyxy[0].to_dict(orient='records') #감지된 객체 추출
-    return detections #객체 추출 반환
+    return results, detections #객체 추출 반환
 
 @app.route('/detect', methods=['POST'])
 def detect():
@@ -26,12 +26,17 @@ def detect():
 
         # 이미지 읽기 및 처리
         if file:
-            image_bytes = file.read()
-            image = Image.open(io.BytesIO(image_bytes)) #불러온 이미지를 바이트 형식으로 받기 (이미지 처리)
-            detections = detect_image(image) # 학습모델함수에 해당 이미지 값 넣기
-            return jsonify({"result": detections}), 200 # 처리 결과 JSON으로 반환
+            image = Image.open(file)
+            img_resize = image.resize((600,600))
+            image_result, detections = detect_image(img_resize)
+
+            temp_img_path = 'temp_image.jpg'
+            image_result.save(temp_img_path)
+
+            return send_file(temp_img_path, mimetype='image/jpeg')
         else:
             return jsonify({"error": "Invalid request"}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
