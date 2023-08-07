@@ -15,7 +15,13 @@ def detect_image(image_resize):
     results = model(image_resize) #학습모델로 이미지 처리
     results.render()
     detections = results.pandas().xyxy[0].to_dict(orient='records') #감지된 객체 추출
-    return results, detections #객체 추출 반환
+    ai_result = 'GOOD'
+
+    for label in detections:
+        if label['name'] in ['LMe', 'LMm', 'LMl', 'LCVe', 'LCVm', 'LCVl']:
+            ai_result = 'BAD'
+            break
+    return results, ai_result #객체 추출 반환
 
 @app.route('/detect', methods=['POST'])
 def detect():
@@ -28,12 +34,20 @@ def detect():
         if file:
             image = Image.open(file)
             img_resize = image.resize((600,600))
-            image_result, detections = detect_image(img_resize)
+            image_result, ai_result = detect_image(img_resize)
 
             temp_img_path = 'temp_image.jpg'
             image_result.save(temp_img_path)
 
-            return send_file(temp_img_path, mimetype='image/jpeg')
+            result = {
+                'code':200,
+                'msg':'successful',
+                'result':{
+                    'ai_result': ai_result,
+                    'ai_img': temp_img_path
+                }
+            }
+            return result
         else:
             return jsonify({"error": "Invalid request"}), 500
 
