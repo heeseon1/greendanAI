@@ -1,3 +1,6 @@
+import base64
+import io
+
 from PIL import Image
 from flask import Flask, request, jsonify, send_file
 import torch
@@ -36,15 +39,16 @@ def detect():
             img_resize = image.resize((600,600))
             image_result, ai_result = detect_image(img_resize)
 
-            temp_img_path = 'temp_image.jpg'
-            image_result.save(temp_img_path)
+            temp_img_byte = io.BytesIO()
+            image_result.save(temp_img_byte)
+            img_base64 = base64.b64encode(temp_img_byte.getvalue()).decode('utf-8')
 
             result = {
                 'code':200,
                 'msg':'successful',
                 'result':{
                     'ai_result': ai_result,
-                    'ai_img': temp_img_path
+                    'ai_img': img_base64
                 }
             }
             return result
