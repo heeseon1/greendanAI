@@ -1,9 +1,7 @@
 import base64
 import io
-
-import numpy as np
 from PIL import Image
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify
 import torch
 
 app = Flask(__name__)
@@ -27,7 +25,7 @@ def detect_image(image_resize):
             break
     return results, ai_result #객체 추출 반환
 
-@app.route('/detect', methods=['POST'])
+@app.route('/detect', methods=['POST','GET'])
 def detect():
         file = request.files['file'] # 요청에서 업로드 된 이미지 가져오기 (form-data: file|"파일명.jpg")
 
@@ -36,23 +34,24 @@ def detect():
 
         # 이미지 읽기 및 처리
         if file:
-            file_bytes = file.read()
-            image = Image.open(io.BytesIO(file_bytes))
+            image = Image.open(file)
             img_resize = image.resize((600,600))
             image_result, ai_result = detect_image(img_resize)
 
             temp_img_byte = io.BytesIO()
             image_result.save(temp_img_byte)
+            img_base64 = base64.b64encode(temp_img_byte.getvalue()).decode('utf-8')
 
             result = {
                 'code':200,
                 'msg':'successful',
                 'result':{
                     'ai_result': ai_result,
+                    'ai_img': img_base64
                 }
             }
-            #result는 json형식이라 이미지가 표시되지 않는 것 같아 이미지 표시만 확인해보려고 리턴값을 이렇게 설정했습니다.
-            return Response(temp_img_byte.getvalue())
+
+            return jsonify(result)
         else:
             return jsonify({"error": "Invalid request"}), 500
 
