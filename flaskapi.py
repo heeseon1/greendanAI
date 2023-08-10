@@ -1,8 +1,9 @@
 import base64
 import io
 from PIL import Image
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 import torch
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -38,29 +39,52 @@ def detect():
             return jsonify({'error': 'No file'}), 400
 
         # 이미지 읽기 및 처리
-        image = Image.open(file)
+        image = Image.open(io.BytesIO(file.read()))
+        print("image:", image)
+
         img_resize = image.resize((600, 600))
         image_result, ai_result = detect_image(img_resize)
 
-        temp_img_byte = io.BytesIO()
-        image_result.save(temp_img_byte)
-        img_base64 = base64.b64encode(temp_img_byte.getvalue()).decode('utf-8')
-        print("img:", img_base64)
+        print("image_result:", image_result)
+        print("ai_result:", ai_result)
 
-        result = {
-            'code': 200,
-            'msg': 'successful',
-            'result': {
-                'ai_result': ai_result,
-                'ai_img': img_base64
+        image_result.render()
+
+        ai_images = []
+
+        for i in image_result.ims: #ims로 이름 변경
+            ai_byte = io.BytesIO()
+            ai_img = Image.fromarray(i)
+            ai_img.save(ai_byte, format='jpeg')
+            ai_images.append(base64.b64encode(ai_byte.getvalue()).decode('utf-8'))
+
+            result = {
+                'code': 200,
+                'msg': 'successful',
+                'result': {
+                    'ai_result': ai_result,
+                    'ai_images': ai_images
+                }
             }
-        }
 
-        return jsonify(result)
+            return jsonify(result)
+
 
     except Exception as e:
         print(f"image_error: {str(e)}")
         return jsonify({"error":"image error"})
+
+
+@app.route('/img')
+def image_json():
+    image_path = 'file.jpg'
+    with open(image_path, 'rb')as image_file:
+        image_date = image_file.read()
+        encoded_image = base64.b64encode(image_date).decode('utf+8')
+
+    json = {'image_base64':encoded_image}
+    return jsonify(json)
+
 
 
 if __name__ == '__main__':
