@@ -58,16 +58,16 @@ def detect():
             ai_img.save(ai_byte, format='jpeg')
             ai_images.append(base64.b64encode(ai_byte.getvalue()).decode('utf-8'))
 
-            result = {
-                'code': 200,
-                'msg': 'successful',
-                'result': {
-                    'ai_result': ai_result,
-                    'ai_images': ai_images
-                }
-            }
+        result = {
+            'code': 200,
+            'msg': 'successful',
+            'result': {
+                'ai_result': ai_result,
+                'ai_images': ai_images
+             }
+         }
 
-            return jsonify(result)
+        return jsonify(result)
 
 
     except Exception as e:
