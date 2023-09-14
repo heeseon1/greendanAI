@@ -277,23 +277,41 @@ def home():
 
 @app.route('/detect', methods=['POST'])
 def detect():
-    file = request.files['file']  # 요청에서 업로드 된 이미지 가져오기 (form-data: file|"파일명.jpg")
+    try:
+        file = request.files['file']  # 요청에서 업로드 된 이미지 가져오기 (form-data: file|"파일명.jpg")
 
-    if not file:  # 파일이 존재하지 않을시 JSON 처리
-        return jsonify({'error': 'No file'}), 400
+        if not file:  # 파일이 존재하지 않을시 JSON 처리
+            return jsonify({'error': 'No file'}), 400
 
-    # 이미지 읽기 및 처리
-    if file:
-        image = Image.open(file)
-        img_resize = image.resize((600, 600))
-        results, detections = detect_image(img_resize)
+        # 이미지 읽기 및 처리
+        if file:
+            image = Image.open(file)
+            img_resize = image.resize((600, 600))
+            image_result, ai_result = detect_image(img_resize)
 
-        temp_img_path = 'temp_image.jpg'
-        results.save(temp_img_path)
+            image_result.render()
+            ai_images = []
 
-        return send_file(temp_img_path, mimetype='image/jpeg')
-    else:
-        return jsonify({"error": "Invalid request"}), 500
+            for i in image_result.ims: #ims로 이름 변경
+                ai_byte = io.BytesIO()
+                ai_img = Image.fromarray(i)
+                ai_img.save(ai_byte, format='jpeg')
+                ai_images.append(base64.b64encode(ai_byte.getvalue()).decode('utf-8'))
+
+            result = {
+                'code': 200,
+                'msg': 'successful',
+                'result': {
+                    'ai_result': ai_result,
+                    'ai_images': ai_images
+                 }
+             }
+
+            return jsonify(result)
+
+    except Exception as e:
+        print(f"image_error: {str(e)}")
+    return jsonify({"error": "image error"})
 
 if __name__ == '__main__':
     opt = parse_opt()

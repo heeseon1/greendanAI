@@ -1,16 +1,15 @@
 import base64
 import io
+import requests
 from PIL import Image
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify
 import torch
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
 # yolov5s로 학습한 학습 모델 로드
 model = torch.hub.load('ultralytics/yolov5', 'custom', path='halibut/jobs6/weights/best.pt', force_reload=True,
                        skip_validation=True)
-
 
 @app.route('/')  # 라우팅 테스트
 def home():
@@ -22,18 +21,26 @@ def detect_image(image_resize):
     results.render()
     detections = results.pandas().xyxy[0].to_dict(orient='records')  # 감지된 객체 추출
     ai_result = 'GOOD'
+    ai_name = '정상'
 
     for label in detections:
-        if label['name'] in ['LMe', 'LMm', 'LMl', 'LCVe', 'LCVm', 'LCVl']:
+        if label['name'] in ['LMe', 'LMm', 'LMl']:
             ai_result = 'BAD'
+            ai_name = '토마토 잎 곰팡이병'
             break
-    return results, ai_result  # 객체 추출 반환
+
+        elif label['name'] in ['LCVe', 'LCVm', 'LCVl']:
+            ai_result = 'BAD'
+            ai_name = '토마토 황화잎말이 바이러스'
+
+    return results, ai_result, ai_name  # 객체 추출 반환
 
 
 @app.route('/detect', methods=['POST'])
 def detect():
     try:
         file = request.files['file']  # 요청에서 업로드 된 이미지 가져오기 (form-data: file|"파일명.jpg")
+        print(file)
 
         if not file:  # 파일이 존재하지 않을시 JSON 처리
             return jsonify({'error': 'No file'}), 400
@@ -43,7 +50,7 @@ def detect():
         print("image:", image)
 
         img_resize = image.resize((600, 600))
-        image_result, ai_result = detect_image(img_resize)
+        image_result, ai_result, ai_name = detect_image(img_resize)
 
         print("image_result:", image_result)
         print("ai_result:", ai_result)
@@ -63,12 +70,12 @@ def detect():
             'msg': 'successful',
             'result': {
                 'ai_result': ai_result,
-                'ai_images': ai_images
+                'ai_images': ai_images,
+                'ai_name': ai_name
              }
          }
 
         return jsonify(result)
-
 
     except Exception as e:
         print(f"image_error: {str(e)}")
