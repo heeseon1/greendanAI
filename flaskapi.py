@@ -28,7 +28,7 @@ def detect_image(image_resize):
 
         if detections:
             for label in detections:
-                if label['name'] == 'Nomar':
+                if label['name'] == 'Nomal':
                     ai_result = 'GOOD'
                     ai_name = '정상'
                     break
