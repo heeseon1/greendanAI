@@ -17,30 +17,41 @@ def home():
 
 
 def detect_image(image_resize):
-    results = model(image_resize)  # 학습모델로 이미지 처리
-    results.render()
-    detections = results.pandas().xyxy[0].to_dict(orient='records')  # 감지된 객체 추출
-    ai_result = 'ETC'
-    ai_name = '기타'
 
-    if detections:
-        for label in detections:
-            if label['name'] == 'Nomar':
-                ai_result = 'GOOD'
-                ai_name = '정상'
-                break
+    try:
+        results = model(image_resize)  # 학습모델로 이미지 처리
+        results.render()
+        detections = results.pandas().xyxy[0].to_dict(orient='records')  # 감지된 객체 추출
 
-            elif label['name'] in ['LMe', 'LMm', 'LMl']:
-                ai_result = 'BAD'
-                ai_name = '토마토 잎 곰팡이병'
-                break
+        ai_result = 'ETC'
+        ai_name = '기타'
 
-            elif label['name'] in ['LCVe', 'LCVm', 'LCVl']:
-                ai_result = 'BAD'
-                ai_name = '토마토 황화잎말이 바이러스'
-                break
+        if detections:
+            for label in detections:
+                if label['name'] == 'Nomar':
+                    ai_result = 'GOOD'
+                    ai_name = '정상'
+                    break
 
-        return results, ai_result, ai_name  # 객체 추출 반환
+                elif label['name'] in ['LMe', 'LMm', 'LMl']:
+                    ai_result = 'BAD'
+                    ai_name = '토마토 잎 곰팡이병'
+                    break
+
+                elif label['name'] in ['LCVe', 'LCVm', 'LCVl']:
+                    ai_result = 'BAD'
+                    ai_name = '토마토 황화잎말이 바이러스'
+                    break
+
+            return results, ai_result, ai_name  # 객체 추출 반환
+
+        return results, ai_result, ai_name
+
+    except Exception as e:
+        ai_result = 'ETC'
+        ai_name = '기타'
+        print(f"image_error: {str(e)}")
+        return image_resize, ai_result, ai_name
 
 
 @app.route('/detect', methods=['POST'])
